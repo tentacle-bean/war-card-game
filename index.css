@@ -1,0 +1,95 @@
+body{
+    margin: 0;
+    padding: 0;
+    background-color: #222;
+    color: #ccc;
+}
+
+body *{
+    font-family: 'Open Sans', sans-serif;
+    text-align: center;
+}
+
+h1{
+    margin: 0.5em 0;
+}
+
+h2{
+    margin: 0;
+}
+
+h3{
+    margin: 1em;
+}
+
+.container{
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+}
+
+
+
+/**************
+    BUTTONS 
+**************/
+
+.btn{
+    border: none;
+    padding: 1em 2em;
+    width: 100%;
+    font-weight: bold;
+    text-transform: uppercase;
+    font-weight: 900;
+    font-size: 1.25rem;
+    letter-spacing: 1px;
+    color: #222;
+}
+
+.btn:hover,
+.btn:focus{
+    cursor: pointer;
+    color: #ccc;
+}
+
+.btn:disabled{
+    color: #222;
+    background-image: linear-gradient(30deg, #222, #ccc);
+    cursor: initial;
+}
+
+.btn-deck{
+    background-image: linear-gradient(150deg, purple, turquoise)
+}
+
+.btn-draw{
+    background-image: linear-gradient(30deg, purple, turquoise)
+}
+
+
+
+/************
+    CARDS 
+************/
+
+.card-container{
+    flex-grow: 1;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    height: 0;
+    min-height: 150px;
+}
+
+.placeholder-card{
+    box-sizing: border-box;
+    aspect-ratio: 5 / 7;
+    border: 5px solid #ccc;
+    border-radius: 5%;
+}
+
+.card-img,
+.placeholder-card{
+    height: 45%;
+}
