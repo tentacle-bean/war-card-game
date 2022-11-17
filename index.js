@@ -16,11 +16,12 @@ const pileWar = {
 const cards = document.getElementById("cards")
 const header = document.getElementById("header")
 const drawBtn = document.getElementById("draw-cards")
+const shuffleBtn = document.getElementById("new-deck")
 
 
 shuffle()
 
-document.getElementById("new-deck").addEventListener("click", shuffle)
+shuffleBtn.addEventListener("click", shuffle)
 
 
 async function shuffle() {
@@ -33,15 +34,29 @@ async function shuffle() {
     
     
     
-    
-    const response = await fetch("https://deckofcardsapi.com/api/deck/new/shuffle/")
-    const data = await response.json()
-    deckId = data.deck_id
-    
-    pileCards(pileComputer)
-    pileCards(pilePlayer)
-    
-    renderScore()
+    try{
+        shuffleBtn.textContent = "Shuffling deck..."
+        drawBtn.disabled = true
+
+        const response = await fetch("https://deckofcardsapi.com/api/deck/new/shuffle/")
+        if(!response.ok){
+            throw Error(response.status)
+        }
+
+        const data = await response.json()
+        deckId = data.deck_id
+        
+        await pileCards(pileComputer)
+        await pileCards(pilePlayer)
+        
+        renderScore()
+        shuffleBtn.textContent = "Shuffle deck"
+        drawBtn.disabled = false
+    }
+    catch(e){
+        console.error(e)
+        shuffleBtn.textContent = "Unable to shuffle the deck, please try again"
+    }
 }
 
 
@@ -49,17 +64,40 @@ async function pileCards(pile){
     pile.count = 26
     
     const response = await fetch(`https://deckofcardsapi.com/api/deck/${deckId}/draw/?count=26`)
+    if(!response.ok){
+        throw Error(response.status)
+    }
     const data = await response.json()
     
-    await fetch(`https://deckofcardsapi.com/api/deck/${deckId}/pile/${pile.name}/add/?cards=${data.cards.map(card => card.code)}`)
+    const response2 = await fetch(`https://deckofcardsapi.com/api/deck/${deckId}/pile/${pile.name}/add/?cards=${data.cards.map(card => card.code)}`)
+    if(!response2.ok){
+        throw Error(response2.status)
+    }
+
+    return true
 }
 
 
 drawBtn.addEventListener("click", async () => {
-    const {dataC, dataP} = await draw2Cards()
+    drawBtn.disabled = true
+    drawBtn.textContent = "Drawing..."
+
+    try{
+        const {dataC, dataP} = await draw2Cards()
     
-    renderCards([dataC.cards[0].image, dataP.cards[0].image])
-    battle(dataC.cards[0], dataP.cards[0])
+        renderCards([dataC.cards[0].image, dataP.cards[0].image])
+        await battle(dataC.cards[0], dataP.cards[0]) // aaa
+
+        drawBtn.textContent = "Draw"
+    }
+    catch(e){
+        console.error(e)
+        drawBtn.textContent = "Something went wrong, please draw again"
+    }
+    finally{
+        drawBtn.disabled = false
+    }
+    
 })
 
 
@@ -68,9 +106,15 @@ async function draw2Cards(){
     pilePlayer.count -= 1
     
     const responseC = await fetch(`https://deckofcardsapi.com/api/deck/${deckId}/pile/${pileComputer.name}/draw/bottom/?count=1`)
+    if(!responseC.ok){
+        throw Error(responseC.status)
+    }
     const dataC = await responseC.json()
     
     const responseP = await fetch(`https://deckofcardsapi.com/api/deck/${deckId}/pile/${pilePlayer.name}/draw/bottom/?count=1`)
+    if(!responseP.ok){
+        throw Error(responseP.status)
+    }
     const dataP = await responseP.json()
     
     return {dataC, dataP}
@@ -80,13 +124,25 @@ async function draw2Cards(){
 async function battle(card1, card2){
     val1 = normalize(card1.value)
     val2 = normalize(card2.value)
-    
+
     if(val1 > val2){
-        battleWon(pileComputer, "Computer", card1, card2)
+        try{
+            await battleWon(pileComputer, "Computer", card1, card2) // aaa
+        }
+        catch(e){
+            throw e
+        }
+        
     }
     
     else if(val1 < val2){
-        battleWon(pilePlayer, "Player", card1, card2)
+        try{
+            await battleWon(pilePlayer, "Player", card1, card2) // aaa
+        }
+        catch(e){
+            throw e
+        }
+        
     }
     
     else{
@@ -96,8 +152,11 @@ async function battle(card1, card2){
         else{
             const {dataC, dataP} = await draw2Cards()
         
-            await fetch(`https://deckofcardsapi.com/api/deck/${deckId}/pile/${pileWar.name}/add/?cards=${dataC.cards[0].code},${dataP.cards[0].code},${card1.code},${card2.code}`)
-            
+            const res = await fetch(`https://deckofcardsapi.com/api/deck/${deckId}/pile/${pileWar.name}/add/?cards=${dataC.cards[0].code},${dataP.cards[0].code},${card1.code},${card2.code}`)
+            if(!res.ok){
+                throw Error(res.status)
+            }
+
             pileWar.count += 4
             header.innerText="War!"
             
@@ -108,13 +167,21 @@ async function battle(card1, card2){
 
 
 async function battleWon(pileWinner, winner, card1, card2){
-    await fetch(`https://deckofcardsapi.com/api/deck/${deckId}/pile/${pileWinner.name}/add/?cards=${card1.code},${card2.code}`)
+    const res = await fetch(`https://deckofcardsapi.com/api/deck/${deckId}/pile/${pileWinner.name}/add/?cards=${card1.code},${card2.code}`)
+    if(!res.ok){
+        throw Error(res.status)
+    }
         
     pileWinner.count += 2
     header.innerText=`${winner} won!`
         
     if(pileWar.count){
-        warWon(pileWinner)
+        try{
+            await warWon(pileWinner) // aaa
+        }
+        catch(e){
+            throw e
+        }
     }
     else{
         renderScore()
@@ -123,10 +190,16 @@ async function battleWon(pileWinner, winner, card1, card2){
 
 
 async function warWon(pileWinner){
-    const response = await fetch(`https://deckofcardsapi.com/api/deck/${deckId}/pile/${pileWar.name}/draw/bottom/?count=${pileWar.count}`)
-    const data = await response.json()
+    const response1 = await fetch(`https://deckofcardsapi.com/api/deck/${deckId}/pile/${pileWar.name}/draw/bottom/?count=${pileWar.count}`)
+    if(!response1.ok){
+        throw Error(response1.status)
+    }
+    const data = await response1.json()
     
-    await fetch(`https://deckofcardsapi.com/api/deck/${deckId}/pile/${pileWinner.name}/add/?cards=${data.cards.map(card => card.code)}`)
+    const response2 = await fetch(`https://deckofcardsapi.com/api/deck/${deckId}/pile/${pileWinner.name}/add/?cards=${data.cards.map(card => card.code)}`)
+    if(!response2.ok){
+        throw Error(response2.status)
+    }
     
     pileWinner.count += pileWar.count
     pileWar.count = 0
